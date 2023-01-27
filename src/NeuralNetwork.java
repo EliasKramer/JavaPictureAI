@@ -1,7 +1,6 @@
-import Time.TimeHelper;
+import time.TimeHelper;
 import data.reader.MnistMatrix;
 
-import javax.swing.*;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.*;
@@ -49,10 +48,29 @@ public class NeuralNetwork {
             costLastBiasChange[i] = new double[nodesPerHiddenLayer];
         }
         initBeforeArrays();
+        initArrays();
+    }
+
+    private void initArrays() {
+        double initWeight = 0.5;
+        double initBias = 0.5;
+        for (double[][] layer : weights) {
+            for (double[] node : layer) {
+                for (int i = 0; i < node.length; i++) {
+                    node[i] = initWeight;
+                }
+            }
+        }
+        for (double[] layer : biases) {
+            for (int i = 0; i < layer.length; i++) {
+                layer[i] = initBias;
+            }
+        }
     }
 
     private void initBeforeArrays() {
-        double initLastWeight = maxCost / 2;
+
+        double initLastWeight = maxCost;
         //last weight change init to initLastWeight
         for (double[][] layer : costLastWeightChange) {
             for (double[] node : layer) {
@@ -81,10 +99,6 @@ public class NeuralNetwork {
             System.out.println("expected value : " + image.getLabel());
             System.out.println("cost : " + getCost(image.getLabel()));
             System.out.println("percent correct : " + percentCorrect / amountDone * 100 + "%");
-            /*System.out.println("biggest weight change: " + getBiggestWeightChange());
-            System.out.println("smallest weight change: " + getSmallestWeightChange());
-            System.out.println("biggest bias change: " + getBiggestBiasChange());
-            System.out.println("smallest bias change: " + getSmallestBiasChange());*/
             Timestamp endOfLearning = new Timestamp(System.currentTimeMillis());
 
             System.out.println("time taken: " + (endOfLearning.getTime() - startOfLearning.getTime()) + "ms");
@@ -97,63 +111,22 @@ public class NeuralNetwork {
             System.out.println("-------------------------------");
         }
     }
-
-    private String getBiggestWeightChange() {
-        double biggest = 0;
-        for (double[][] layer : costLastWeightChange) {
-            for (double[] node : layer) {
-                for (double weight : node) {
-                    if (Math.abs(weight) > biggest) {
-                        biggest = Math.abs(weight);
-                    }
-                }
-            }
-        }
-        return biggest + "";
-    }
-    private String getBiggestBiasChange() {
-        double biggest = 0;
-        for (double[] layer : costLastBiasChange) {
-            for (double bias : layer) {
-                if (Math.abs(bias) > biggest) {
-                    biggest = Math.abs(bias);
-                }
-            }
-        }
-        return biggest + "";
-    }
-    private String getSmallestWeightChange() {
-        double smallest = Double.MAX_VALUE;
-        for (double[][] layer : costLastWeightChange) {
-            for (double[] node : layer) {
-                for (double weight : node) {
-                    if (Math.abs(weight) < smallest) {
-                        smallest = Math.abs(weight);
-                    }
-                }
-            }
-        }
-        return smallest + "";
-    }
-    private String getSmallestBiasChange() {
-        double smallest = Double.MAX_VALUE;
-        for (double[] layer : costLastBiasChange) {
-            for (double bias : layer) {
-                if (Math.abs(bias) < smallest) {
-                    smallest = Math.abs(bias);
-                }
-            }
-        }
-        return smallest + "";
-    }
-
-    public void testOnData(Collection<MnistMatrix> images, boolean detail) {
-        double percentCorrect = 0;
+    private double avgCostOfSet(Collection<MnistMatrix> images) {
+        double totalCost = 0;
         for (MnistMatrix image : images) {
             setInputs(image);
-            calculate();
+            feedForward();
+            totalCost += getCost(image.getLabel());
+        }
+        return totalCost / images.size();
+    }
+    public void testOnData(Collection<MnistMatrix> images, boolean detail) {
+        double numberOfCorrectAnswers = 0;
+        for (MnistMatrix image : images) {
+            setInputs(image);
+            feedForward();
             if (getResult(false) == image.getLabel()) {
-                percentCorrect++;
+                numberOfCorrectAnswers++;
             }
             if(detail) {
                 System.out.println("result : " + getResult(false));
@@ -163,36 +136,37 @@ public class NeuralNetwork {
             }
         }
         //output percentage correct to 2 decimal places
-        System.out.println("Percent correct: " + Math.round(percentCorrect / images.size() * 10000.0) / 100.0 + "%");
+        System.out.println("Percent correct: " + Math.round(numberOfCorrectAnswers / images.size() * 10000.0) / 100.0 + "%");
     }
 
     private void cheapSolve(int desiredOutput) {
-        calculate();
+        feedForward();
 
-        double initialStepSizeWeight = 3;
-        double initialStepSizeBias = 3;
+        double initialStepSizeWeight = .02;
+        double initialStepSizeBias = .02;
 
-        for (int layerIdx = costLastWeightChange.length - 1; layerIdx >= 0; layerIdx--) {
+        for (int layerIdx = 0; layerIdx < costLastWeightChange.length; layerIdx++) {
             for (int nodeIdx = 0; nodeIdx < costLastWeightChange[layerIdx].length; nodeIdx++) {
                 for (int weightIdx = 0; weightIdx < costLastWeightChange[layerIdx][nodeIdx].length; weightIdx++) {
                     double costBefore = getCost(desiredOutput);
                     double weightBefore = weights[layerIdx][nodeIdx][weightIdx];
 
-                    double proportionalStepSize = initialStepSizeWeight;
-                                    //(initialStepSize *
+                    double proportionalStepSize =
+                                    initialStepSizeWeight;
+                                    //(initialStepSizeWeight *
                                     //proportional to the current cost
-                                    //(costBefore / maxCost));// *
+                                    //(costBefore));// *
                                     //proportional to the last cost
-                                    //(costLastWeightChange[layerIdx][nodeIdx][weightIdx] / maxCost);
+                                    //(costLastWeightChange[layerIdx][nodeIdx][weightIdx]));
 
                     weights[layerIdx][nodeIdx][weightIdx] =
                             weightBefore + proportionalStepSize;
-                    calculate();
+                    feedForward();
                     double costAddingStep = getCost(desiredOutput);
 
                     weights[layerIdx][nodeIdx][weightIdx] =
                             weightBefore - proportionalStepSize;
-                    calculate();
+                    feedForward();
                     double costSubtractingStep = getCost(desiredOutput);
 
                     if(costBefore < costAddingStep && costBefore < costSubtractingStep) {
@@ -211,24 +185,25 @@ public class NeuralNetwork {
             }
         }
 
-        for (int layerIdx = costLastWeightChange.length - 1; layerIdx >= 0; layerIdx--) {
+        for (int layerIdx = 0; layerIdx < costLastWeightChange.length; layerIdx++) {
             for (int nodeIdx = 0; nodeIdx < costLastWeightChange[layerIdx].length; nodeIdx++) {
                 double costBefore = getCost(desiredOutput);
                 double biasBefore = biases[layerIdx][nodeIdx];
-                double proportionalStepSize = initialStepSizeBias;
-                                //(initialStepSize *
+                double proportionalStepSize =
+                                initialStepSizeBias;
+                                //(initialStepSizeBias *
                                 //proportional to current cost
-                                //(costBefore / maxCost));// *
+                                //(costBefore));// *
                                 //proportional to last bias change
-                                //(costLastBiasChange[layerIdx][nodeIdx] / maxCost);
+                                //(costLastBiasChange[layerIdx][nodeIdx]));
                 biases[layerIdx][nodeIdx] =
                         biasBefore + proportionalStepSize;
-                calculate();
+                feedForward();
                 double costAddingStep = getCost(desiredOutput);
 
                 biases[layerIdx][nodeIdx] =
                         biasBefore - proportionalStepSize;
-                calculate();
+                feedForward();
                 double costSubtractingStep = getCost(desiredOutput);
 
                 if(costBefore < costAddingStep && costBefore < costSubtractingStep) {
@@ -255,7 +230,7 @@ public class NeuralNetwork {
         }
     }
 
-    public void calculate() {
+    public void feedForward() {
 
         //input calculation to first hidden layer
         hiddenLayer[0] = calculateLayer(inputLayer, weights[0], biases[0]);
@@ -318,19 +293,40 @@ public class NeuralNetwork {
             System.out.println("----------------");
         }
     }
-    public void printWeightsAndBiases()
+    public String getWeightsAndBiases()
     {
-        System.out.println("Weights and Biases:");
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("Weights and Biases:\n");
         for (int i = 0; i < weights.length; i++) {
             for (int j = 0; j < weights[i].length; j++) {
                 for (int k = 0; k < weights[i][j].length; k++) {
-                    System.out.print("layer: " + i + " node: " + j + " weight: " + k + " = weight " + weights[i][j][k] + "\n");
+                    sb.append("layer: " + i + " node: " + j + " weight: " + k + " = weight " + weights[i][j][k] + "\n");
                 }
-                System.out.print("layer: " + i + " node: " + j + " = bias " + biases[i][j] + "\n");
-                System.out.println("----------------");
+                sb.append("layer: " + i + " node: " + j + " = bias " + biases[i][j] + "\n");
+                sb.append("----------------\n");
             }
-            System.out.println("----------------");
+            sb.append("----------------\n");
         }
+        return sb.toString();
+    }
+    public String getLastCostChange()
+    {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("Last Cost Change:\n");
+        for (int i = 0; i < costLastWeightChange.length; i++) {
+            for (int j = 0; j < costLastWeightChange[i].length; j++) {
+                for (int k = 0; k < costLastWeightChange[i][j].length; k++) {
+                    sb.append("layer: " + i + " node: " + j + " weight: " + k + " = weight change " + costLastWeightChange[i][j][k] + "\n");
+                }
+                sb.append("layer: " + i + " node: " + j + " = bias change " + costLastBiasChange[i][j] + "\n");
+                sb.append("----------------\n");
+            }
+            sb.append("----------------\n");
+        }
+
+        return sb.toString();
     }
     /*
     public void calculateLayerThreaded(double[] currLayer, double[] layerBefore, double[][] weights, double[] biases) {
@@ -411,7 +407,7 @@ public class NeuralNetwork {
         System.out.println("Benchmarking calculate()...");
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
         for (int i = 0; i < iterations; i++) {
-            calculate();
+            feedForward();
         }
         Timestamp timestamp2 = new Timestamp(System.currentTimeMillis());
         double time = (timestamp2.getTime() - timestamp.getTime());

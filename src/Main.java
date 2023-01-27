@@ -1,6 +1,5 @@
 import data.reader.ImageManager;
 import data.reader.MnistMatrix;
-
 import java.util.List;
 
 public class Main {
@@ -16,19 +15,23 @@ public class Main {
         //data.reader.ImageManager.printImage(images.get(0));
         NeuralNetwork nn = new NeuralNetwork(Constants.INPUT_SIZE, 10, 2, 16);
         //nn.randomiseWeightsAndBiases();
+        //nn.setInputs(trainingImages.get(0));
 
+        //nn.trainOnData(trainingImages.subList(0, 1000), false);
         //ImageManager.printImages(trainingImages.subList(0, 10));
-        nn.randomiseWeightsAndBiases();
-        nn.trainOnData(trainingImages.subList(0, 1000), false);
-
-        nn.testOnData(testImages, false);
-       // nn.printHiddenLayerValues();
-        //nn.printWeightsAndBiases();
         //nn.randomiseWeightsAndBiases();
-        //nn.setInputs(images.get(0));
+        //nn.trainOnData(trainingImages.subList(18, 20), false);
+        //nn.trainOnData(trainingImages.subList(18, 19), false);
+        //nn.trainOnData(trainingImages.subList(19, 20), false);
+        //AnalyseData.saveStringInTxt(nn.getWeightsAndBiases(), "schlecht");
 
-        //nn.benchmarkCalculate(10000);
-         /*
+        //nn.testOnData(testImages, false);
+        //nn.printHiddenLayerValues();
+        //nn.printLastCostChange();
+        //nn.randomiseWeightsAndBiases();
+        nn.setInputs(testImages.get(0));
+        nn.benchmarkCalculate(100000);
+        /*
 
         System.out.println("calculate");
         nn.calculate();
