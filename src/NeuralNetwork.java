@@ -83,7 +83,7 @@ public class NeuralNetwork {
             Arrays.fill(layer, initLastBias);
         }
     }
-
+    /*
     public void trainOnData(Collection<MnistMatrix> images, boolean detail) {
         int amountDone = 0;
         int total = images.size();
@@ -110,7 +110,20 @@ public class NeuralNetwork {
             System.out.println("done " + amountDone + "/" + total);
             System.out.println("-------------------------------");
         }
+    }*/
+    public void backprop(Collection<MnistMatrix> images)
+    {
+        //random weights and biases
+        //the gradient has to be set to 0 before backprop
+        //for loop over every image
+        //set input to current image and feed forward.
+
+        //for every output layer node
+        //factor 1 = diffence to the expected value of the output layer
+        //factor 2 = activation
+        //
     }
+
 
     public double avgCostOfSet(Collection<MnistMatrix> images) {
         double totalCost = 0;
@@ -141,12 +154,13 @@ public class NeuralNetwork {
         System.out.println("Percent correct: " + Math.round(numberOfCorrectAnswers / images.size() * 10000.0) / 100.0 + "%");
     }
 
-    public void cheapSolve(Collection<MnistMatrix> images) {
+    public void cheapSolve(List<MnistMatrix> images) {
         feedForward();
+        int sublistSize = 400;
+        int iterationLimit = 20;
 
         double initialStepSizeWeight = .05;
         double initialStepSizeBias = .05;
-        int iterationLimit = 20;
         double lastCost;
         double currCost = Double.MAX_VALUE;
 
@@ -162,32 +176,40 @@ public class NeuralNetwork {
 
         int iterationIdxOnLastStepsizeChange = 0;
 
+
         Timestamp start = new Timestamp(System.currentTimeMillis());
 
         for (int iteration = 0; iteration < iterationLimit; iteration++) {
             System.out.println("iteration " + iteration);
 
+            //random subset of images to train on
+            int imagesSize = images.size() - sublistSize;
+            int randomIdx = (int) (Math.random() * imagesSize);
+            List<MnistMatrix> imageSubset = images.subList(randomIdx, randomIdx + sublistSize);
             //iterate over layers
-            double costBefore = avgCostOfSet(images);
+            double costBefore = avgCostOfSet(imageSubset);
 
             for (int layerIdx = 0; layerIdx < weights.length; layerIdx++) {
                 System.out.println("layer " + layerIdx);
                 for (int nodeIdx = 0; nodeIdx < weights[layerIdx].length; nodeIdx++) {
                     for (int weightIdx = 0; weightIdx < weights[layerIdx][nodeIdx].length; weightIdx++) {
                         double weightBefore = weights[layerIdx][nodeIdx][weightIdx];
-
+                        double costBeforeActual = avgCostOfSet(imageSubset);
+                        if(costBeforeActual != costBefore){
+                            throw new RuntimeException("cost before actual is not equal to cost before");
+                        }
                         double proportionalStepSize =
-                                initialStepSizeWeight;
-                        //(initialStepSizeWeight +
-                        //(costLastWeightChange[layerIdx][nodeIdx][weightIdx]));
+                                //initialStepSizeWeight;
+                        (initialStepSizeWeight +
+                        (costLastWeightChange[layerIdx][nodeIdx][weightIdx]));
 
                         weights[layerIdx][nodeIdx][weightIdx] =
                                 weightBefore + proportionalStepSize;
-                        double costAddingStep = avgCostOfSet(images);
+                        double costAddingStep = avgCostOfSet(imageSubset);
 
                         weights[layerIdx][nodeIdx][weightIdx] =
                                 weightBefore - proportionalStepSize;
-                        double costSubtractingStep = avgCostOfSet(images);
+                        double costSubtractingStep = avgCostOfSet(imageSubset);
 
                         if (costBefore < costAddingStep && costBefore < costSubtractingStep) {
                             //if the cost is lower without changing the weight, don't change the weight
@@ -215,17 +237,17 @@ public class NeuralNetwork {
                 for (int nodeIdx = 0; nodeIdx < biases[layerIdx].length; nodeIdx++) {
                     double biasBefore = biases[layerIdx][nodeIdx];
                     double proportionalStepSize =
-                            initialStepSizeBias;
-                    //(initialStepSizeBias +
-                    //(costLastBiasChange[layerIdx][nodeIdx]));
+                            //initialStepSizeBias;
+                    (initialStepSizeBias +
+                    (costLastBiasChange[layerIdx][nodeIdx]));
 
                     biases[layerIdx][nodeIdx] =
                             biasBefore + proportionalStepSize;
-                    double costAddingStep = avgCostOfSet(images);
+                    double costAddingStep = avgCostOfSet(imageSubset);
 
                     biases[layerIdx][nodeIdx] =
                             biasBefore - proportionalStepSize;
-                    double costSubtractingStep = avgCostOfSet(images);
+                    double costSubtractingStep = avgCostOfSet(imageSubset);
 
                     //if the cost is lower without changing the bias, don't change the bias
                     if (costBefore < costAddingStep && costBefore < costSubtractingStep) {
@@ -252,10 +274,10 @@ public class NeuralNetwork {
                     }
                 }
             }
-            trainOnChangedSetAgain(images);
+            trainOnChangedSetAgain(imageSubset);
 
             lastCost = currCost;
-            currCost = avgCostOfSet(images);
+            currCost = avgCostOfSet(imageSubset);
 
             System.out.println("currcost: " + currCost);
 
@@ -291,8 +313,12 @@ public class NeuralNetwork {
 
             //print estimate of time remaining
             Timestamp endOfLearning = new Timestamp(System.currentTimeMillis());
-            long timeRemaining = (endOfLearning.getTime() - start.getTime()) *
-                    ((long)iterationLimit - (long)iteration);
+
+            long timeSinceStart = (endOfLearning.getTime() - start.getTime());
+            int tasksToDo = iterationLimit - iteration;
+            long timePerTask = timeSinceStart / (iteration+1);
+            long timeRemaining = timePerTask * tasksToDo;
+            System.out.println("time elapsed: " + TimeHelper.getTimeString(timeSinceStart));
             System.out.println("time remaining: " + TimeHelper.getTimeString(timeRemaining));
 
             System.out.println("-------------------------------");

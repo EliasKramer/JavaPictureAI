@@ -15,7 +15,7 @@ public class Main {
         //data.reader.ImageManager.printImage(images.get(0));
         NeuralNetwork nn = new NeuralNetwork(Constants.INPUT_SIZE, 10, 2, 16);
         //nn.randomiseWeightsAndBiases();
-        nn.cheapSolve(trainingImages.subList(0,120));
+        nn.cheapSolve(trainingImages);
         nn.testOnData(testImages, false);
         //nn.trainOnData(trainingImages.subList(0, 1000), false);
         //ImageManager.printImages(trainingImages.subList(0, 10));
