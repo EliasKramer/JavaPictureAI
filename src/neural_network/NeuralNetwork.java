@@ -1,118 +1,87 @@
-import time.TimeHelper;
+package neural_network;
+
 import data.reader.MnistMatrix;
+import util.Hasher;
 
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.*;
 
 public class NeuralNetwork {
-    private final int numHiddenLayers;
-    private final int nodesPerHiddenLayer;
-    private final double[] inputLayer;
-    private final double[][] hiddenLayer;
-    private double[] outputLayer;
-    //first index is layer, second is node, third is weight
+    private final double[][] activations;
     private final double[][][] weights;
-    private final double[][][] costLastWeightChange;
     private final double[][] biases;
-    private final double[][] costLastBiasChange;
-    private final double maxCost = 10;
+    private final int numOutputNodes;
+    private final int numInputNodes;
+    private final int outputIdx;
+    private final String[] outputNames;
 
     public NeuralNetwork(int numInputs, int numOutputs, int numHiddenLayers, int nodesPerHiddenLayer) {
-        this.numHiddenLayers = numHiddenLayers;
-        this.nodesPerHiddenLayer = nodesPerHiddenLayer;
-        inputLayer = new double[numInputs];
-        hiddenLayer = new double[numHiddenLayers][nodesPerHiddenLayer];
-        outputLayer = new double[numOutputs];
 
-        costLastWeightChange = new double[numHiddenLayers + 1][][];
+        numInputNodes = numInputs;
+        numOutputNodes = numOutputs;
+        outputIdx = numHiddenLayers + 1;
+
+        activations = new double[numHiddenLayers + 2][];
+        declareActivationArrays(numInputs, numOutputs, nodesPerHiddenLayer);
+
         weights = new double[numHiddenLayers + 1][][];
-
-        weights[0] = new double[nodesPerHiddenLayer][numInputs];
-        costLastWeightChange[0] = new double[nodesPerHiddenLayer][numInputs];
-
-        for (int i = 1; i < numHiddenLayers; i++) {
-            weights[i] = new double[nodesPerHiddenLayer][nodesPerHiddenLayer];
-            costLastWeightChange[i] = new double[nodesPerHiddenLayer][nodesPerHiddenLayer];
-        }
-        weights[numHiddenLayers] = new double[numOutputs][nodesPerHiddenLayer];
-        costLastWeightChange[numHiddenLayers] = new double[numOutputs][nodesPerHiddenLayer];
+        declareWeightArrays(numInputs, numOutputs, nodesPerHiddenLayer);
 
         biases = new double[numHiddenLayers + 1][];
-        costLastBiasChange = new double[numHiddenLayers + 1][];
+        declareBiasArrays(numOutputs, nodesPerHiddenLayer);
 
-        biases[numHiddenLayers] = new double[outputLayer.length];
-        costLastBiasChange[numHiddenLayers] = new double[outputLayer.length];
-        for (int i = 0; i < numHiddenLayers; i++) {
-            biases[i] = new double[nodesPerHiddenLayer];
-            costLastBiasChange[i] = new double[nodesPerHiddenLayer];
-        }
-        initBeforeArrays();
+        outputNames = new String[numOutputs];
+        declareOutputNames();
+
         initArrays();
     }
 
+    private void declareActivationArrays(int numInputs, int numOutputs, int nodesPerHiddenLayer) {
+        activations[0] = new double[numInputs];
+        for (int i = 1; i < activations.length - 1; i++) {
+            activations[i] = new double[nodesPerHiddenLayer];
+        }
+        activations[outputIdx] = new double[numOutputs];
+    }
+
+    private void declareWeightArrays(int numInputs, int numOutputs, int nodesPerHiddenLayer) {
+        weights[0] = new double[nodesPerHiddenLayer][numInputs];
+        for (int i = 1; i < weights.length - 1; i++) {
+            weights[i] = new double[nodesPerHiddenLayer][nodesPerHiddenLayer];
+        }
+        weights[weights.length - 1] = new double[numOutputs][nodesPerHiddenLayer];
+    }
+
+    private void declareBiasArrays(int numOutputs, int nodesPerHiddenLayer) {
+        for (int i = 0; i < biases.length - 1; i++) {
+            biases[i] = new double[nodesPerHiddenLayer];
+        }
+        biases[biases.length - 1] = new double[numOutputs];
+    }
+
+    private void declareOutputNames() {
+        for (int i = 0; i < outputNames.length; i++) {
+            outputNames[i] = String.valueOf(i);
+        }
+    }
+
     private void initArrays() {
-        double initWeight = 0.0;
-        double initBias = 0.0;
-        for (double[][] layer : weights) {
-            for (double[] node : layer) {
-                for (int i = 0; i < node.length; i++) {
-                    node[i] = initWeight;
-                }
+        final double initVal = 0;
+        for (double[] activation : activations) {
+            Arrays.fill(activation, initVal);
+        }
+        for (double[][] weight : weights) {
+            for (double[] doubles : weight) {
+                Arrays.fill(doubles, initVal);
             }
         }
-        for (double[] layer : biases) {
-            for (int i = 0; i < layer.length; i++) {
-                layer[i] = initBias;
-            }
+        for (double[] bias : biases) {
+            Arrays.fill(bias, initVal);
         }
     }
 
-    private void initBeforeArrays() {
-
-        double initLastWeight = maxCost;
-        //last weight change init to initLastWeight
-        for (double[][] layer : costLastWeightChange) {
-            for (double[] node : layer) {
-                Arrays.fill(node, initLastWeight);
-            }
-        }
-        double initLastBias = 1.0;
-        //last bias change init to initLastBias
-        for (double[] layer : costLastBiasChange) {
-            Arrays.fill(layer, initLastBias);
-        }
-    }
-    /*
-    public void trainOnData(Collection<MnistMatrix> images, boolean detail) {
-        int amountDone = 0;
-        int total = images.size();
-        double percentCorrect = 0;
-        Timestamp start = new Timestamp(System.currentTimeMillis());
-        for (MnistMatrix image : images) {
-            amountDone++;
-            Timestamp startOfLearning = new Timestamp(System.currentTimeMillis());
-            setInputs(image);
-            //cheapSolve(image.getLabel());
-            percentCorrect += image.getLabel() == getResult(false) ? 1 : 0;
-            System.out.println("result : " + getResult(detail));
-            System.out.println("expected value : " + image.getLabel());
-            System.out.println("cost : " + getCost(image.getLabel()));
-            System.out.println("percent correct : " + percentCorrect / amountDone * 100 + "%");
-            Timestamp endOfLearning = new Timestamp(System.currentTimeMillis());
-
-            System.out.println("time taken: " + (endOfLearning.getTime() - startOfLearning.getTime()) + "ms");
-
-            // time remaining till finish
-            long timeRemaining = (endOfLearning.getTime() - startOfLearning.getTime()) * (total - amountDone);
-            System.out.println("time remaining: " + TimeHelper.getTimeString(timeRemaining));
-            long timePerPicture = (endOfLearning.getTime() - startOfLearning.getTime());
-            System.out.println("done " + amountDone + "/" + total);
-            System.out.println("-------------------------------");
-        }
-    }*/
-    public void backprop(Collection<MnistMatrix> images)
-    {
+    public void backprop(Collection<MnistMatrix> images) {
         //random weights and biases
         //the gradient has to be set to 0 before backprop
         //for loop over every image
@@ -124,37 +93,28 @@ public class NeuralNetwork {
         //
     }
 
-
-    public double avgCostOfSet(Collection<MnistMatrix> images) {
+    public double avgCostOfSet(Collection<AiData> dataset) {
         double totalCost = 0;
-        for (MnistMatrix image : images) {
+        for (AiData image : dataset) {
             setInputs(image);
             feedForward();
             totalCost += getCost(image.getLabel());
         }
-        return totalCost / images.size();
+        return totalCost / dataset.size();
     }
 
-    public void testOnData(Collection<MnistMatrix> images, boolean detail) {
+    public void testOnData(Collection<AiData> dataSet) {
         double numberOfCorrectAnswers = 0;
-        for (MnistMatrix image : images) {
+        for (AiData image : dataSet) {
             setInputs(image);
             feedForward();
-            if (getResult(false) == image.getLabel()) {
-                numberOfCorrectAnswers++;
-            }
-            if (detail) {
-                System.out.println("result : " + getResult(false));
-                System.out.println("expected value : " + image.getLabel());
-                System.out.println("cost : " + getCost(image.getLabel()));
-                System.out.println("-------------------------------");
-            }
         }
         //output percentage correct to 2 decimal places
-        System.out.println("Percent correct: " + Math.round(numberOfCorrectAnswers / images.size() * 10000.0) / 100.0 + "%");
+        System.out.println("Percent correct: " + Math.round(numberOfCorrectAnswers / dataSet.size() * 10000.0) / 100.0 + "%");
     }
 
-    public void cheapSolve(List<MnistMatrix> images) {
+    /*
+    public void cheapSolve(List<AiData> images) {
         feedForward();
         int sublistSize = 400;
         int iterationLimit = 20;
@@ -185,7 +145,7 @@ public class NeuralNetwork {
             //random subset of images to train on
             int imagesSize = images.size() - sublistSize;
             int randomIdx = (int) (Math.random() * imagesSize);
-            List<MnistMatrix> imageSubset = images.subList(randomIdx, randomIdx + sublistSize);
+            List<AiData> imageSubset = images.subList(randomIdx, randomIdx + sublistSize);
             //iterate over layers
             double costBefore = avgCostOfSet(imageSubset);
 
@@ -195,13 +155,13 @@ public class NeuralNetwork {
                     for (int weightIdx = 0; weightIdx < weights[layerIdx][nodeIdx].length; weightIdx++) {
                         double weightBefore = weights[layerIdx][nodeIdx][weightIdx];
                         double costBeforeActual = avgCostOfSet(imageSubset);
-                        if(costBeforeActual != costBefore){
+                        if (costBeforeActual != costBefore) {
                             throw new RuntimeException("cost before actual is not equal to cost before");
                         }
                         double proportionalStepSize =
                                 //initialStepSizeWeight;
-                        (initialStepSizeWeight +
-                        (costLastWeightChange[layerIdx][nodeIdx][weightIdx]));
+                                (initialStepSizeWeight +
+                                        (costLastWeightChange[layerIdx][nodeIdx][weightIdx]));
 
                         weights[layerIdx][nodeIdx][weightIdx] =
                                 weightBefore + proportionalStepSize;
@@ -238,8 +198,8 @@ public class NeuralNetwork {
                     double biasBefore = biases[layerIdx][nodeIdx];
                     double proportionalStepSize =
                             //initialStepSizeBias;
-                    (initialStepSizeBias +
-                    (costLastBiasChange[layerIdx][nodeIdx]));
+                            (initialStepSizeBias +
+                                    (costLastBiasChange[layerIdx][nodeIdx]));
 
                     biases[layerIdx][nodeIdx] =
                             biasBefore + proportionalStepSize;
@@ -292,7 +252,7 @@ public class NeuralNetwork {
             printAvgAbsCostOfWeights();
             printAvgAbsCostOfBiases();
 
-            if(lastCost - currCost < minCostChange &&
+            if (lastCost - currCost < minCostChange &&
                     //you can only half the step size every 5 iterations
                     iterationIdxOnLastStepsizeChange > 5) {
                 System.out.println("changing step size");
@@ -316,7 +276,7 @@ public class NeuralNetwork {
 
             long timeSinceStart = (endOfLearning.getTime() - start.getTime());
             int tasksToDo = iterationLimit - iteration;
-            long timePerTask = timeSinceStart / (iteration+1);
+            long timePerTask = timeSinceStart / (iteration + 1);
             long timeRemaining = timePerTask * tasksToDo;
             System.out.println("time elapsed: " + TimeHelper.getTimeString(timeSinceStart));
             System.out.println("time remaining: " + TimeHelper.getTimeString(timeRemaining));
@@ -324,8 +284,7 @@ public class NeuralNetwork {
             System.out.println("-------------------------------");
         }
     }
-    private void printAvgAbsCostOfWeights()
-    {
+    private void printAvgAbsCostOfWeights() {
         System.out.println("avg abs cost of weights:");
         String output = "";
         for (int layerIdx = 0; layerIdx < costLastWeightChange.length; layerIdx++) {
@@ -337,12 +296,12 @@ public class NeuralNetwork {
                     totalWeights++;
                 }
             }
-            output += "layer"+layerIdx+": " + (totalCost / totalWeights)+", \n";
+            output += "layer" + layerIdx + ": " + (totalCost / totalWeights) + ", \n";
         }
         System.out.println(output);
     }
-    private void printAvgAbsCostOfBiases()
-    {
+
+    private void printAvgAbsCostOfBiases() {
         System.out.println("avg abs cost of biases");
         String output = "";
         for (int layerIdx = 0; layerIdx < costLastBiasChange.length; layerIdx++) {
@@ -352,10 +311,11 @@ public class NeuralNetwork {
                 totalCost += Math.abs(biases[layerIdx][nodeIdx]);
                 totalBiases++;
             }
-            output += "layer"+layerIdx+": " + (totalCost / totalBiases)+", \n";
+            output += "layer" + layerIdx + ": " + (totalCost / totalBiases) + ", \n";
         }
         System.out.println(output);
     }
+
     private void trainOnChangedSetAgain(Collection<MnistMatrix> images) {
         double lastCost = Double.MAX_VALUE;
 
@@ -405,78 +365,39 @@ public class NeuralNetwork {
             }
         }
     }
-
-    public void setInputs(MnistMatrix image) {
-        for (int i = 0; i < image.getNumberOfRows(); i++) {
-            for (int j = 0; j < image.getNumberOfColumns(); j++) {
-                inputLayer[i * image.getNumberOfColumns() + j] = ((double) (image.getValue(i, j))) / 255d;
-            }
+    */
+    public void setInputs(AiData image) {
+        double[] inputData = image.getInputs();
+        if (inputData.length != numInputNodes) {
+            throw new IllegalArgumentException("the input picture is not the right size");
         }
+        activations[0] = inputData;
     }
 
     public void feedForward() {
-
-        //input calculation to first hidden layer
-        hiddenLayer[0] = calculateLayer(inputLayer, weights[0], biases[0]);
-
-        //hidden layer calculations
-        for (int i = 1; i < numHiddenLayers; i++) {
-            hiddenLayer[i] =
-                    calculateLayer(
-                            hiddenLayer[i - 1],
-                            weights[i],
-                            biases[i]);
+        for (int i = 1; i < activations.length; i++) {
+            calculateLayer(i);
         }
-        //calculate last hidden layer to output layer
-        outputLayer =
-                calculateLayer(
-                        hiddenLayer[numHiddenLayers - 1],
-                        weights[numHiddenLayers],
-                        biases[numHiddenLayers]);
     }
 
-    /*
-    public void calculateThreaded() {
+    public void calculateLayer(int layerIdx) {
+        double[] activationPrevLayer = this.activations[layerIdx - 1];
+        double[][] currWeights = this.weights[layerIdx-1];
+        double[] currBiases = this.biases[layerIdx-1];
 
-        //input calculation to first hidden layer
-        calculateLayerThreaded(inputLayer, hiddenLayer[0], weights[0], biases[0]);
-
-        //hidden layer calculations
-        for (int i = 1; i < numHiddenLayers; i++) {
-            calculateLayerThreaded(
-                    hiddenLayer[i - 1],
-                    hiddenLayer[i],
-                    weights[i],
-                    biases[i]);
+        if(currBiases.length != currWeights.length) {
+            throw new IllegalArgumentException("the number of biases does not match the number of nodes in the layer");
         }
-        //calculate last hidden layer to output layer
-        calculateLayerThreaded(
-                hiddenLayer[numHiddenLayers - 1],
-                outputLayer,
-                weights[numHiddenLayers],
-                biases[numHiddenLayers]);
-    }
-    */
-    public double[] calculateLayer(double[] layerBefore, double[][] weights, double[] biases) {
-        double[] result = new double[biases.length];
-        for (int i = 0; i < weights.length; i++) {
+
+        for (int currNodeIdx = 0; currNodeIdx < currBiases.length; currNodeIdx++) {
             double value = 0;
-            for (int j = 0; j < layerBefore.length; j++) {
-                value = value + (layerBefore[j] * weights[i][j]);
+            for (int prevNodeIdx = 0; prevNodeIdx < activationPrevLayer.length; prevNodeIdx++) {
+                double activation = activationPrevLayer[prevNodeIdx];
+                double weight = currWeights[currNodeIdx][prevNodeIdx];
+                value += activation * weight;
             }
-            value += biases[i];
-            result[i] = Sigmoid(value + biases[i]);
-        }
-        return result;
-    }
-
-    public void printHiddenLayerValues() {
-        System.out.println("Hidden Layer Values:");
-        for (int i = 0; i < hiddenLayer.length; i++) {
-            for (int j = 0; j < hiddenLayer[i].length; j++) {
-                System.out.print("layer: " + i + " node: " + j + " = " + hiddenLayer[i][j] + "\n");
-            }
-            System.out.println("----------------");
+            value += currBiases[currNodeIdx];
+            activations[layerIdx][currNodeIdx] = Sigmoid(value);
         }
     }
 
@@ -487,39 +408,38 @@ public class NeuralNetwork {
         for (int i = 0; i < weights.length; i++) {
             for (int j = 0; j < weights[i].length; j++) {
                 for (int k = 0; k < weights[i][j].length; k++) {
-                    sb.append("layer: " + i + " node: " + j + " weight: " + k + " = weight " + weights[i][j][k] + "\n");
+                    sb.append("layer: ")
+                            .append(i)
+                            .append(" node: ")
+                            .append(j)
+                            .append(" weight: ")
+                            .append(k)
+                            .append(" = weight ")
+                            .append(weights[i][j][k])
+                            .append("\n");
                 }
-                sb.append("layer: " + i + " node: " + j + " = bias " + biases[i][j] + "\n");
-                sb.append("----------------\n");
+                sb.append("layer: ")
+                        .append(i)
+                        .append(" node: ")
+                        .append(j)
+                        .append(" = bias ")
+                        .append(biases[i][j])
+                        .append("\n")
+                        .append("----------------\n");
             }
             sb.append("----------------\n");
         }
         return sb.toString();
     }
 
-    public String getLastCostChange() {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("Last Cost Change:\n");
-        for (int i = 0; i < costLastWeightChange.length; i++) {
-            for (int j = 0; j < costLastWeightChange[i].length; j++) {
-                for (int k = 0; k < costLastWeightChange[i][j].length; k++) {
-                    sb.append("layer: " + i + " node: " + j + " weight: " + k + " = weight change " + costLastWeightChange[i][j][k] + "\n");
-                }
-                sb.append("layer: " + i + " node: " + j + " = bias change " + costLastBiasChange[i][j] + "\n");
-                sb.append("----------------\n");
-            }
-            sb.append("----------------\n");
-        }
-
-        return sb.toString();
-    }
-
-    public double getCost(double expectedIndex) {
+    public double getCost(String expectedLabel) {
         double cost = 0d;
-        for (int i = 0; i < outputLayer.length; i++) {
-            double expectedValue = i == expectedIndex ? 1d : 0d;
-            cost += Math.pow(outputLayer[i] - expectedValue, 2);
+        for (int i = 0; i < numOutputNodes; i++) {
+            double expectedValue =
+                    outputNames[i].equals(expectedLabel)
+                            ? 1d
+                            : 0d;
+            cost += Math.pow(activations[outputIdx][i] - expectedValue, 2);
         }
         return cost;
     }
@@ -539,19 +459,19 @@ public class NeuralNetwork {
         }
     }
 
-    public int getResult(boolean print) {
+    public String getResult(boolean print) {
         double max = 0d;
         int index = 0;
-        for (int i = 0; i < outputLayer.length; i++) {
-            if (outputLayer[i] > max) {
-                max = outputLayer[i];
+        for (int i = 0; i < numOutputNodes; i++) {
+            if (activations[outputIdx][i] > max) {
+                max = activations[outputIdx][i];
                 index = i;
             }
             if (print) {
-                System.out.println("Output " + i + ": " + outputLayer[i]);
+                System.out.println("Output " + outputNames[i] + ": " + activations[outputIdx][i]);
             }
         }
-        return index;
+        return outputNames[index];
     }
 
     public void benchmarkCalculate() {
@@ -573,7 +493,23 @@ public class NeuralNetwork {
         return 1d / (1d + Math.exp(-value));
     }
 
+    private double reLu(double value) {
+        return Math.max(0, value);
+    }
+
     private double randomInclusive(double min, double max) {
         return Math.random() * (max - min) + min;
+    }
+
+    public String getOutputHash(String expectedLabel) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(getCost(expectedLabel));
+        for (int i = 0; i < activations[outputIdx].length; i++) {
+            sb.append(activations[outputIdx][i]);
+        }
+        return Hasher.getHash(sb.toString());
+    }
+    public double[] getCopyOfOutput() {
+        return Arrays.copyOf(activations[outputIdx], activations[outputIdx].length);
     }
 }

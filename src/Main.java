@@ -1,5 +1,7 @@
 import data.reader.ImageManager;
 import data.reader.MnistMatrix;
+import neural_network.NeuralNetwork;
+
 import java.util.List;
 
 public class Main {
@@ -13,10 +15,10 @@ public class Main {
 
 
         //data.reader.ImageManager.printImage(images.get(0));
-        NeuralNetwork nn = new NeuralNetwork(Constants.INPUT_SIZE, 10, 2, 16);
+        //NeuralNetwork nn = new NeuralNetwork(Constants.INPUT_SIZE, 10, 2, 16);
         //nn.randomiseWeightsAndBiases();
-        nn.cheapSolve(trainingImages);
-        nn.testOnData(testImages, false);
+        //nn.cheapSolve(trainingImages);
+        //nn.testOnData(testImages, false);
         //nn.trainOnData(trainingImages.subList(0, 1000), false);
         //ImageManager.printImages(trainingImages.subList(0, 10));
         //nn.randomiseWeightsAndBiases();
