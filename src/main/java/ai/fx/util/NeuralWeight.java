@@ -35,7 +35,7 @@ public class NeuralWeight {
         rectangleLine.setY(midY - 5);
         rectangleLine.setWidth(length);
 
-        rectangleLine.setHeight(2/(1+Math.exp(-weight)));
+        rectangleLine.setHeight(Math.abs(weight*1.5));
         rectangleLine.setFill(weight == 0 ? Color.BLACK : weight > 0 ? Color.BLUE : Color.RED);
 
         rectangleLine.setRotate(Math.toDegrees(Math.atan2(y2 - y1, x2 - x1)));

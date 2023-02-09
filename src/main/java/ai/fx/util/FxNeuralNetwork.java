@@ -52,7 +52,7 @@ public class FxNeuralNetwork {
         if (maxRadius != -1 && radius > maxRadius)
             radius = maxRadius;
 
-        int distanceBetweenHorizontal = (availableWidth - (nodes.length - 1) * 2 - distanceToBound * 2) / (nodes.length * 2);
+        int distanceBetweenHorizontal = (availableWidth - nodes.length * radius * 2 - distanceToBound * 2) / (nodes.length - 1);
 
         int currX = distanceToBound + radius;
 
@@ -79,11 +79,11 @@ public class FxNeuralNetwork {
 
     private void initWeights() {
         for (int i = 0; i < weights.length; i++) {
-            weights[i] = new NeuralWeight[nodes[i].length][nodes[i + 1].length];
+            weights[i] = new NeuralWeight[nodes[i + 1].length][nodes[i].length];
 
             for (int j = 0; j < weights[i].length; j++) {
                 for (int k = 0; k < weights[i][j].length; k++) {
-                    weights[i][j][k] = new NeuralWeight(nodes[i][j], nodes[i + 1][k], 0);
+                    weights[i][j][k] = new NeuralWeight(nodes[i][k],nodes[i + 1][j],  0);
                 }
             }
         }
@@ -129,6 +129,8 @@ public class FxNeuralNetwork {
     }
 
     public void setBiasAt(int x, int y, double value) {
+        //x++ is because the first layer is the input layer
+        x++;
         if(x >= nodes.length || y >= nodes[x].length)
             return;
 

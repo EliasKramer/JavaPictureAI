@@ -1,7 +1,6 @@
 package ai.fx.main;
 
 import ai.fx.util.FxNeuralNetwork;
-import ai.fx.util.NeuralNode;
 import ai.neural_network.NeuralNetwork;
 import ai.reader.ImageManager;
 import ai.reader.MnistMatrix;
@@ -13,11 +12,11 @@ import javafx.stage.Stage;
 import java.util.List;
 
 public class FxMain extends Application {
-    private int dimX = 1000;
-    private int dimY = 600;
     NeuralNetwork network;
     @Override
     public void start(Stage stage) {
+        int dimX = 1500;
+        int dimY = 800;
         network = new NeuralNetwork(28*28, 10, 2, 16, new FxNeuralNetwork(20, 10, 2, 16, dimX, dimY));
 
         Group root = network.getFx().getNodesAsGroup();
