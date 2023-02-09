@@ -1,6 +1,7 @@
-import data.reader.ImageManager;
-import data.reader.MnistMatrix;
-import neural_network.NeuralNetwork;
+
+import ai.neural_network.NeuralNetwork;
+import ai.reader.ImageManager;
+import ai.reader.MnistMatrix;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -37,8 +38,7 @@ class TestNeuralNetwork {
         }
     }
     @Test
-    void testIfNewNetworkOutputsNeutralValues()
-    {
+    void testIfNewNetworkOutputsNeutralValues() {
         NeuralNetwork nn = new NeuralNetwork(getUnitTestImages().get(0).getSizeOfInputs(), 10, 2, 16);
 
         nn.feedForward();
