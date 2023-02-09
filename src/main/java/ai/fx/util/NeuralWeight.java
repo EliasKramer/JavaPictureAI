@@ -1,4 +1,4 @@
-package elias.kramer.ai.fx.util;
+package ai.fx.util;
 
 import javafx.scene.Node;
 import javafx.scene.paint.Color;
@@ -7,7 +7,7 @@ import javafx.scene.shape.Rectangle;
 public class NeuralWeight {
     private final NeuralNode from;
     private final NeuralNode to;
-    private float weight;
+    private double weight;
     private Rectangle rectangleLine;
     public NeuralWeight(NeuralNode from, NeuralNode to, float weight) {
         this.from = from;
@@ -35,8 +35,8 @@ public class NeuralWeight {
         rectangleLine.setY(midY - 5);
         rectangleLine.setWidth(length);
 
-        rectangleLine.setHeight(1/(1+Math.exp(-weight)) * 1.5);
-        rectangleLine.setFill(weight > 0 ? Color.GREEN : Color.RED);
+        rectangleLine.setHeight(2/(1+Math.exp(-weight)));
+        rectangleLine.setFill(weight == 0 ? Color.BLACK : weight > 0 ? Color.BLUE : Color.RED);
 
         rectangleLine.setRotate(Math.toDegrees(Math.atan2(y2 - y1, x2 - x1)));
     }
@@ -52,11 +52,11 @@ public class NeuralWeight {
         return to;
     }
 
-    public float getWeight() {
+    public double getWeight() {
         return weight;
     }
 
-    public void setWeight(float weight) {
+    public void setWeight(double weight) {
         this.weight = weight;
         updateLine();
     }

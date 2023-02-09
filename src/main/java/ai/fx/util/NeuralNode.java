@@ -1,21 +1,23 @@
-package elias.kramer.ai.fx.util;
+package ai.fx.util;
 
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 
+import java.text.DecimalFormat;
+
 public class NeuralNode {
     private int x;
     private int y;
     private int radius;
-    private float number;
-    private float bias;
+    private double number;
+    private double bias;
     private Color circleColor;
     private Color textColor;
     private Text text;
     private Text biasText;
     private Circle circle;
-    public NeuralNode(int x, int y, int radius, float number, Color color, Color textColor, float bias) {
+    public NeuralNode(int x, int y, int radius, double number, Color color, Color textColor, double bias) {
         this.x = x;
         this.y = y;
         this.radius = radius;
@@ -66,10 +68,10 @@ public class NeuralNode {
         this.y = y;
         updatePosition();
     }
-    public float getNumber() {
+    public double getNumber() {
         return number;
     }
-    public void setNumber(float number) {
+    public void setNumber(double number) {
         this.number = number;
         updateText();
     }
@@ -94,10 +96,10 @@ public class NeuralNode {
         this.circleColor = circleColor;
         updateCircleColor();
     }
-    public float getBias() {
+    public double getBias() {
         return bias;
     }
-    public void setBias(float bias) {
+    public void setBias(double bias) {
         this.bias = bias;
         updateText();
         updateTextColor();
@@ -106,31 +108,42 @@ public class NeuralNode {
     //update
     private void updateTextColor() {
         text.setFill(textColor);
-        biasText.setFill(bias > 0 ? Color.GREEN : Color.RED);
+        biasText.setFill(bias > 0 ? Color.BLUE : Color.RED);
     }
 
     private void updateCircleColor() {
         circle.setFill(circleColor);
     }
-    private void updatePosition()
-    {
+    private void updatePosition() {
         circle.setCenterX(x);
         circle.setCenterY(y);
 
-        circle.setRadius(radius);
-        //font-size of text
-        text.setStyle("-fx-font-size: "+ radius/2 +"px;");
-        biasText.setStyle("-fx-font-size: "+ radius/2 +"px;");
-        //center text
-        text.setX(x - text.getLayoutBounds().getWidth() / 6);
-        biasText.setX(x - biasText.getLayoutBounds().getWidth() / 6);
+        circle.setRadius(Math.round(radius * 100.0) / 100.0);
 
-        text.setY(y - radius/3);
-        biasText.setY(y + radius/3);
+        // font-size of text
+        int fontSize = (int) Math.round(radius / 2);
+        text.setStyle("-fx-font-size: " + fontSize + "px;");
+        biasText.setStyle("-fx-font-size: " + fontSize + "px;");
+
+        // center text
+        double textX = x - text.getLayoutBounds().getWidth() / 2;
+        double biasTextX = x - biasText.getLayoutBounds().getWidth() / 2;
+        text.setX(Math.round(textX * 100.0) / 100.0);
+        biasText.setX(Math.round(biasTextX * 100.0) / 100.0);
+
+        double textY = y - fontSize / 3;
+        double biasTextY = y + fontSize / 1.5;  // increase the offset
+        text.setY(Math.round(textY * 100.0) / 100.0);
+        biasText.setY(Math.round(biasTextY * 100.0) / 100.0);
     }
+
+
     private void updateText()
     {
-        text.setText(String.valueOf(number));
-        biasText.setText(String.valueOf(bias));
+        DecimalFormat df = new DecimalFormat("#.##");
+        String formattedNumber = df.format(number);
+        String formattedBias = df.format(bias);
+        text.setText(formattedNumber);
+        biasText.setText(formattedBias);
     }
 }

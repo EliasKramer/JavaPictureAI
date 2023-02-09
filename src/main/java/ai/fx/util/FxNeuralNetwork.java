@@ -1,4 +1,4 @@
-package elias.kramer.ai.fx.util;
+package ai.fx.util;
 
 import javafx.scene.Group;
 
@@ -7,12 +7,17 @@ public class FxNeuralNetwork {
     private final NeuralWeight[][][] weights;
     private final int boundX;
     private final int boundY;
-    public FxNeuralNetwork(int inputSize, int numHiddenLayers, int sizeHiddenLayer, int outputSize, int boundX, int boundY)
-    {
+
+    public FxNeuralNetwork(
+            int inputSize,
+            int outputSize,
+            int numHiddenLayers,
+            int sizeHiddenLayer,
+            int boundX,
+            int boundY) {
         nodes = new NeuralNode[numHiddenLayers + 2][];
         nodes[0] = new NeuralNode[inputSize];
-        for(int i = 1; i < numHiddenLayers + 1; i++)
-        {
+        for (int i = 1; i < numHiddenLayers + 1; i++) {
             nodes[i] = new NeuralNode[sizeHiddenLayer];
         }
         nodes[numHiddenLayers + 1] = new NeuralNode[outputSize];
@@ -26,11 +31,10 @@ public class FxNeuralNetwork {
         weights = new NeuralWeight[nodes.length - 1][][];
         initWeights();
     }
+
     private void initNodes() {
-        for(int i = 0; i < nodes.length; i++)
-        {
-            for(int j = 0; j < nodes[i].length; j++)
-            {
+        for (int i = 0; i < nodes.length; i++) {
+            for (int j = 0; j < nodes[i].length; j++) {
                 nodes[i][j] = new NeuralNode();
             }
         }
@@ -42,11 +46,10 @@ public class FxNeuralNetwork {
             int distanceBetween,
             int distanceToBound,
             int maxRadius
-    )
-    {
+    ) {
         int biggestLayerSize = getBiggestLayerSize();
         int radius = (availableHeight - (biggestLayerSize - 1) * 2 - distanceToBound * 2) / (biggestLayerSize * 2);
-        if(maxRadius != -1 && radius > maxRadius)
+        if (maxRadius != -1 && radius > maxRadius)
             radius = maxRadius;
 
         int distanceBetweenHorizontal = (availableWidth - (nodes.length - 1) * 2 - distanceToBound * 2) / (nodes.length * 2);
@@ -73,16 +76,13 @@ public class FxNeuralNetwork {
         }
         return biggestLayerSize;
     }
-    private void initWeights()
-    {
-        for(int i = 0; i < weights.length; i++)
-        {
+
+    private void initWeights() {
+        for (int i = 0; i < weights.length; i++) {
             weights[i] = new NeuralWeight[nodes[i].length][nodes[i + 1].length];
 
-            for(int j = 0; j < weights[i].length; j++)
-            {
-                for(int k = 0; k < weights[i][j].length; k++)
-                {
+            for (int j = 0; j < weights[i].length; j++) {
+                for (int k = 0; k < weights[i][j].length; k++) {
                     weights[i][j][k] = new NeuralWeight(nodes[i][j], nodes[i + 1][k], 0);
                 }
             }
@@ -90,13 +90,11 @@ public class FxNeuralNetwork {
     }
 
 
-    public Group getNodesAsGroup()
-    {
+    public Group getNodesAsGroup() {
         Group group = new Group();
         for (NeuralNode[] layer : nodes) {
-            for(NeuralNode n : layer)
-            {
-                if(!isNodeInBounds(n))
+            for (NeuralNode n : layer) {
+                if (!isNodeInBounds(n))
                     throw new IllegalArgumentException("Node is not in bounds");
                 group.getChildren().add(n.getCircle());
                 group.getChildren().add(n.getText());
@@ -104,12 +102,9 @@ public class FxNeuralNetwork {
             }
         }
         for (NeuralWeight[][] layer : weights) {
-            for(NeuralWeight[] n : layer)
-            {
-                for(NeuralWeight w : n)
-                {
-                    if(w != null)
-                    {
+            for (NeuralWeight[] n : layer) {
+                for (NeuralWeight w : n) {
+                    if (w != null) {
                         group.getChildren().add(w.getLine());
                     }
                 }
@@ -117,21 +112,32 @@ public class FxNeuralNetwork {
         }
         return group;
     }
-    private boolean isNodeInBounds(NeuralNode node)
-    {
-        return node.getX() < boundX && node.getY() < boundY;
+
+    private boolean isNodeInBounds(NeuralNode node) {
+        return isPositionInBounds(node.getX(), node.getY());
     }
-    public void setActivationAt(int x, int y, float value)
-    {
+
+    private boolean isPositionInBounds(int x, int y) {
+        return x < boundX && y < boundY;
+    }
+
+    public void setActivationAt(int x, int y, double value) {
+        if (x >= nodes.length || y >= nodes[x].length)
+            return;
+
         nodes[x][y].setNumber(value);
     }
-    public void setBiasAt(int x, int y, float value)
-    {
+
+    public void setBiasAt(int x, int y, double value) {
+        if(x >= nodes.length || y >= nodes[x].length)
+            return;
+
         nodes[x][y].setBias(value);
     }
 
-    public void setWeightAt(int x, int y, int z, float value)
-    {
+    public void setWeightAt(int x, int y, int z, double value) {
+        if(x >= weights.length || y >= weights[x].length || z >= weights[x][y].length)
+            return;
         weights[x][y][z].setWeight(value);
     }
 }

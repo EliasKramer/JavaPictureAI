@@ -1,5 +1,6 @@
 package ai.neural_network;
 
+import ai.fx.util.FxNeuralNetwork;
 import ai.time.TimeHelper;
 import ai.util.Hasher;
 
@@ -14,7 +15,13 @@ public class NeuralNetwork {
     private final int numInputNodes;
     private final int outputIdx;
     private final String[] outputNames;
-    public NeuralNetwork(int numInputs, int numOutputs, int numHiddenLayers, int nodesPerHiddenLayer) {
+    private final FxNeuralNetwork fx;
+    public NeuralNetwork(int numInputs, int numOutputs, int numHiddenLayers, int nodesPerHiddenLayer)
+    {
+        this(numInputs, numOutputs, numHiddenLayers, nodesPerHiddenLayer, null);
+    }
+    public NeuralNetwork(int numInputs, int numOutputs, int numHiddenLayers, int nodesPerHiddenLayer, FxNeuralNetwork fx) {
+        this.fx = fx;
 
         numInputNodes = numInputs;
         numOutputNodes = numOutputs;
@@ -266,5 +273,35 @@ public class NeuralNetwork {
     }
     public double[] getCopyOfOutput() {
         return Arrays.copyOf(activations[outputIdx], activations[outputIdx].length);
+    }
+
+    public void updateFx()
+    {
+        for(int i = 0; i < activations.length; i++)
+        {
+            for(int j = 0; j < activations[i].length; j++)
+            {
+                fx.setActivationAt(i, j, activations[i][j]);
+            }
+        }
+        for(int i = 0; i < weights.length; i++)
+        {
+            for(int j = 0; j < weights[i].length; j++)
+            {
+                for(int k = 0; k < weights[i][j].length; k++)
+                {
+                    fx.setWeightAt(i, j, k, weights[i][j][k]);
+                }
+            }
+        }
+        for(int i = 0; i < biases.length; i++) {
+            for (int j = 0; j < biases[i].length; j++) {
+                fx.setBiasAt(i, j, biases[i][j]);
+            }
+        }
+    }
+    public FxNeuralNetwork getFx()
+    {
+        return fx;
     }
 }
