@@ -14,6 +14,8 @@ public class NeuralNetwork {
     private final int numOutputNodes;
     private final int numInputNodes;
     private final int outputIdx;
+    private final int outputWeightIdx;
+    private final int outputBiasIdx;
     private final String[] outputNames;
     private final FxNeuralNetwork fx;
     public NeuralNetwork(int numInputs, int numOutputs, int numHiddenLayers, int nodesPerHiddenLayer)
@@ -26,6 +28,8 @@ public class NeuralNetwork {
         numInputNodes = numInputs;
         numOutputNodes = numOutputs;
         outputIdx = numHiddenLayers + 1;
+        outputWeightIdx = outputIdx - 1;
+        outputBiasIdx = outputIdx - 1;
 
         activations = new double[numHiddenLayers + 2][];
         declareActivationArrays(numInputs, numOutputs, nodesPerHiddenLayer);
@@ -53,13 +57,13 @@ public class NeuralNetwork {
         for (int i = 1; i < weights.length - 1; i++) {
             weights[i] = new double[nodesPerHiddenLayer][nodesPerHiddenLayer];
         }
-        weights[weights.length - 1] = new double[numOutputs][nodesPerHiddenLayer];
+        weights[outputWeightIdx] = new double[numOutputs][nodesPerHiddenLayer];
     }
     private void declareBiasArrays(int numOutputs, int nodesPerHiddenLayer) {
         for (int i = 0; i < biases.length - 1; i++) {
             biases[i] = new double[nodesPerHiddenLayer];
         }
-        biases[biases.length - 1] = new double[numOutputs];
+        biases[outputBiasIdx] = new double[numOutputs];
     }
     private void declareOutputNames() {
         for (int i = 0; i < outputNames.length; i++) {
@@ -99,9 +103,10 @@ public class NeuralNetwork {
         //output percentage correct to 2 decimal places
         System.out.println("Percent correct: " + Math.round(numberOfCorrectAnswers / dataSet.size() * 10000.0) / 100.0 + "%");
     }
-    public void learn(List<AiData> dataset)
+    public void learn(Collection<AiData> dataset)
     {
-        TrainingBatchHandler<AiData> batchHandler = new TrainingBatchHandler<>(dataset);
+        //making a copy of the dataset so that it can be shuffled without affecting the original
+        TrainingBatchHandler<AiData> batchHandler = new TrainingBatchHandler<>(new ArrayList<>(dataset));
         int batchSize = 100;
 
         List<AiData> currentBatch = batchHandler.getNewRandomBatch(batchSize);
@@ -109,29 +114,59 @@ public class NeuralNetwork {
         AiData currentData = currentBatch.get(0);
         setInputs(currentData);
         feedForward();
+        System.out.println("current label: " + currentData.getLabel());
+        System.out.println(getResult(true));
+
         double[] unhappiness = new double[numOutputNodes];
         for(int i = 0; i < numOutputNodes; i++)
         {
             unhappiness[i] = currentData.getLabel().equals(outputNames[i]) ? 1 : 0 -
                                 activations[outputIdx][i];
         }
-        for(int i = 0; i < numOutputNodes; i++)
-        {
-            for(int j = 0; j < weights[outputIdx].length; j++)
-            {
-                //weights[outputIdx][i][j] += unhappiness[i] * activations[outputIdx - 1][j];
-                double deltaWeight = unhappiness[i] * activations[outputIdx - 1][j];
-                double deltaBias = unhappiness[i];
-            }
-        }
+        backprop(outputIdx, unhappiness);
+
+        feedForward();
+        System.out.println(getResult(true));
     }
     public void backprop(int idx, double[] unhappiness) {
-        if(idx == -1)
+        if(idx <= 0)
         {
             return;
         }
 
+        int currLayerIdx = idx;
+        int layerBeforeIdx = idx - 1;
+        int weightAndBiasIdx = idx -1;
+        double[] prevLayer = activations[layerBeforeIdx];
+        double[][] currWeights = weights[weightAndBiasIdx];
+        double[] currBiases = biases[weightAndBiasIdx];
+        double[] currLayer = activations[currLayerIdx];
 
+        //set next unhappiness array for the next recursion
+        double[] unhappinessPrevLayer = new double[prevLayer.length];
+        for(int prev = 0; prev < prevLayer.length; prev++)
+        {
+            double sumForUnhappiness = 0;
+            for(int curr = 0; curr < currLayer.length; curr++)
+            {
+                sumForUnhappiness += currWeights[curr][prev] * unhappiness[curr];
+            }
+            unhappinessPrevLayer[prev] = sumForUnhappiness;
+        }
+
+        //apply weight and bias changes
+        for(int curr = 0; curr < currLayer.length; curr++)
+        {
+            for(int prev = 0; prev < prevLayer.length; prev++)
+            {
+                double deltaWeight = unhappiness[curr] * activations[layerBeforeIdx][prev];
+                currWeights[curr][prev] += deltaWeight;
+            }
+            double deltaBias = unhappiness[curr];
+            currBiases[curr] += deltaBias;
+        }
+
+        backprop(idx-1, unhappinessPrevLayer);
     }
 
     public void setInputs(AiData image) {

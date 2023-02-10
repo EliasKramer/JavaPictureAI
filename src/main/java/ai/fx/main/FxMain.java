@@ -1,6 +1,7 @@
 package ai.fx.main;
 
 import ai.fx.util.FxNeuralNetwork;
+import ai.neural_network.AiData;
 import ai.neural_network.NeuralNetwork;
 import ai.reader.ImageManager;
 import ai.reader.MnistMatrix;
@@ -37,7 +38,7 @@ public class FxMain extends Application {
         System.out.println("FX started");
 
         //get ai images
-        List<MnistMatrix> trainingImages = ImageManager.getImages(
+        List<AiData> trainingImages = ImageManager.getImages(
                 "data/mnist/train-images.idx3-ubyte", "data/mnist/train-labels.idx1-ubyte");
 
         network.setInputs(trainingImages.get(0));

@@ -1,12 +1,14 @@
 package ai.reader;
 
+import ai.neural_network.AiData;
+
 import java.io.*;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
 public class ImageManager {
-    public static List<MnistMatrix> getImages(String dataFilePath, String labelFilePath) {
+    public static List<AiData> getImages(String dataFilePath, String labelFilePath) {
         try {
             DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(new FileInputStream(dataFilePath)));
             int magicNumber = dataInputStream.readInt();
@@ -26,7 +28,7 @@ public class ImageManager {
             //System.out.println("labels magic number is: " + labelMagicNumber);
             //System.out.println("number of labels is: " + numberOfLabels);
 
-            MnistMatrix[] data = new MnistMatrix[numberOfItems];
+            AiData[] data = new MnistMatrix[numberOfItems];
 
             assert numberOfItems == numberOfLabels;
 
