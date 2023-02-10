@@ -18,9 +18,11 @@ public class Main {
 
         NeuralNetwork nn = new NeuralNetwork(trainingImages.get(0).getSizeOfInputs(), 10, 2, 16);
         //convert
+        nn.testOnData(testImages);
         nn.learn(trainingImages);
 
         //nn.setInputs(trainingImages.get(0));
         //nn.benchmarkCalculate(1000000);
+        nn.testOnData(testImages);
     }
 }

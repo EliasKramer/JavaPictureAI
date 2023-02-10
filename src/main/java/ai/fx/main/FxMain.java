@@ -41,9 +41,14 @@ public class FxMain extends Application {
         List<AiData> trainingImages = ImageManager.getImages(
                 "data/mnist/train-images.idx3-ubyte", "data/mnist/train-labels.idx1-ubyte");
 
-        network.setInputs(trainingImages.get(0));
+        List<AiData> testImages = ImageManager.getImages(
+                "data/mnist/t10k-images.idx3-ubyte", "data/mnist/t10k-labels.idx1-ubyte");
+
         network.randomiseWeightsAndBiases();
-        network.feedForward();
+        network.learn(trainingImages);
+
+        network.testOnData(testImages);
+
         network.updateFx();
     }
 }

@@ -7,6 +7,7 @@ import java.util.List;
 public class TrainingBatchHandler<T> {
     private final Collection<T> _data;
     private int _currentIdx;
+    private int _shuffleCount;
     public TrainingBatchHandler(Collection<T> data) {
         if(data == null)
             throw new IllegalArgumentException("Data cannot be null.");
@@ -31,5 +32,7 @@ public class TrainingBatchHandler<T> {
     private void shuffleData() {
         Collections.shuffle((java.util.List<T>) _data);
         _currentIdx = 0;
+        _shuffleCount++;
+        System.out.println("Shuffled data. Shuffle count: " + _shuffleCount + ".");
     }
 }
