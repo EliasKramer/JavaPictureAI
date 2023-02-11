@@ -37,9 +37,10 @@ public class SuperNetwork {
             networks[i].randomiseWeightsAndBiases(amount);
     }
 
+    //keep the step size below or equal to 1
     public void learn(Collection<AiData> data, int numberOfIterations, double stepSize, int numEpochs, int batchSize)
     {
-        Thread loggingThread = startLogThread(1000, numEpochs, numberOfIterations);
+        Thread loggingThread = startLogThread(5000, numEpochs, numberOfIterations);
 
         for(int iterationIdx = 0; iterationIdx < numberOfIterations; iterationIdx++) {
             //split data into learn and test
@@ -49,7 +50,7 @@ public class SuperNetwork {
             //threads for learning
             Thread[] threads = new Thread[numberOfNetworks];
             //results, that are set after learning (percent correct)
-            double[] results = new double[numberOfNetworks];
+            TestResult[] results = new TestResult[numberOfNetworks];
 
             //learn in parallel
             for (int i = 0; i < numberOfNetworks; i++) {
@@ -72,22 +73,24 @@ public class SuperNetwork {
 
             //find best result
             for (int i = 0; i < numberOfNetworks; i++) {
-                if (results[i] > percentCorrectOfBest) {
-                    percentCorrectOfBest = results[i];
+                if (results[i].percentCorrect() > percentCorrectOfBest) {
+                    percentCorrectOfBest = results[i].percentCorrect();
                     bestIdx = i;
                 }
+                System.out.println("Network " + i + " result: " + results[i].percentCorrect() + "% correct. " +
+                        String.format("%.2f", results[i].averageCost()) + " average cost. ");
             }
 
             //apply noise to all networks except the best one
-            System.out.println("Best result: " + percentCorrectOfBest);
+            System.out.println("Best result: " + percentCorrectOfBest + ", idx: " + bestIdx + ". Applying noise...");
             for (int i = 0; i < numberOfNetworks; i++) {
                 if (i != bestIdx) {
-                    networks[i] = networks[bestIdx].getCopy();
-                    networks[i].applyNoise(noise);
+                    //networks[i] = networks[bestIdx].getCopy();
+                    //networks[i].applyNoise(noise);
                 }
             }
         }
-        //stopLogThread(loggingThread);
+        stopLogThread(loggingThread);
     }
     public NeuralNetwork getBestNetwork()
     {
@@ -137,14 +140,14 @@ public class SuperNetwork {
     }
     private void stopLogThread(Thread t)
     {
-        for(int i = 0; i < numberOfNetworks; i++)
-            progressOfNetworks[i] = 0;
-        //wait for thread to finish after setting loggingThreadShouldRun to false
         try {
             t.join();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+
+        for(int i = 0; i < numberOfNetworks; i++)
+            progressOfNetworks[i] = 0;
     }
     public void updateProgress(int networkId) {
         progressOfNetworks[networkId] ++;

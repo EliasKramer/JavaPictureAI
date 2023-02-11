@@ -110,7 +110,7 @@ public class NeuralNetwork {
         return totalCost / dataset.size();
     }
 
-    public double testOnData(Collection<AiData> dataSet, boolean print) {
+    public TestResult testOnData(Collection<AiData> dataSet, boolean print) {
         double numberOfCorrectAnswers = 0;
         double totalCost = 0;
         for (AiData image : dataSet) {
@@ -127,7 +127,7 @@ public class NeuralNetwork {
             System.out.println("Percent correct: " + percentCorrect + "%");
             System.out.println("Average cost: " + totalCost / dataSet.size());
         }
-        return percentCorrect;
+        return new TestResult(percentCorrect, totalCost / dataSet.size());
     }
 
     public void learn(

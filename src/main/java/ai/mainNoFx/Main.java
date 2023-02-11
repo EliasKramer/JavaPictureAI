@@ -15,9 +15,9 @@ public class Main {
         List<AiData> testImages = ImageManager.getImages(
                 "data/mnist/t10k-images.idx3-ubyte", "data/mnist/t10k-labels.idx1-ubyte");
 
-        SuperNetwork superNetwork = new SuperNetwork(2, 8.0, 4.0, 28*28, 10, 2, 4);
+        SuperNetwork superNetwork = new SuperNetwork(16, .5, 4.0, 28*28, 10, 2, 12);
 
-        superNetwork.learn(trainingImages, 3, 1, 300, 300);
+        superNetwork.learn(trainingImages, 5, .1, 100, 100);
 
         superNetwork.getBestNetwork().testOnData(testImages, true);
     }
