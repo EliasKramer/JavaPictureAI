@@ -1,9 +1,8 @@
 package ai.mainNoFx;
 
 import ai.neural_network.AiData;
-import ai.neural_network.NeuralNetwork;
+import ai.neural_network.SuperNetwork;
 import ai.reader.ImageManager;
-import ai.reader.MnistMatrix;
 
 import java.util.List;
 
@@ -16,13 +15,10 @@ public class Main {
         List<AiData> testImages = ImageManager.getImages(
                 "data/mnist/t10k-images.idx3-ubyte", "data/mnist/t10k-labels.idx1-ubyte");
 
-        NeuralNetwork nn = new NeuralNetwork(trainingImages.get(0).getSizeOfInputs(), 10, 2, 16);
-        //convert
-        nn.testOnData(testImages);
-        nn.learn(trainingImages);
+        SuperNetwork superNetwork = new SuperNetwork(2, 8.0, 4.0, 28*28, 10, 2, 4);
 
-        //nn.setInputs(trainingImages.get(0));
-        //nn.benchmarkCalculate(1000000);
-        nn.testOnData(testImages);
+        superNetwork.learn(trainingImages, 3, 1, 300, 300);
+
+        superNetwork.getBestNetwork().testOnData(testImages, true);
     }
 }

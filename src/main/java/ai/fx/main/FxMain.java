@@ -44,10 +44,10 @@ public class FxMain extends Application {
         List<AiData> testImages = ImageManager.getImages(
                 "data/mnist/t10k-images.idx3-ubyte", "data/mnist/t10k-labels.idx1-ubyte");
 
-        network.randomiseWeightsAndBiases();
-        network.learn(trainingImages);
+        //network.randomiseWeightsAndBiases();
+        //network.learn(trainingImages);
 
-        network.testOnData(testImages);
+        network.testOnData(testImages, true);
 
         network.updateFx();
     }

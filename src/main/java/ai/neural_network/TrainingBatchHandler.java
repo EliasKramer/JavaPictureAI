@@ -33,6 +33,5 @@ public class TrainingBatchHandler<T> {
         Collections.shuffle((java.util.List<T>) _data);
         _currentIdx = 0;
         _shuffleCount++;
-        System.out.println("Shuffled data. Shuffle count: " + _shuffleCount + ".");
     }
 }
